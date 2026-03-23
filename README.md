@@ -1,6 +1,6 @@
 # Bingo-Book-Shinobi-Intelligence-Database
 This project manages a ninja world database, tracking academy students, Genin, missions, and Chunin exam participants. It also maintains a Bingo Book for rogue shinobi and monitors village resources like weapons, scrolls, and ninjutsu, providing a complete system for shinobi and military data.
-# Abstract 
+## Abstract 
 In the world of shinobi-warriors trained in the art of ninjutsu,taijutsu, and genjutsu, keeping
 intel on different shinobis, their abilities, their ranks, and similar attributes is crucial. Where
 the global order of the ninja world is at stake, large scale ninja wars, vicious ninja operations,
@@ -15,7 +15,7 @@ In a nutshell, a well-structured ninja database is the bread and butter of today
 An efficient database means a stronger and well informed nation, technically enhancing its
 capability to act strategically and have a tactical advantage over others.
 
-# Description
+## Description
 In the ninja world, all novice ninjas enroll in an academy and graduate after passing first tier
 exams known as genin exams. After which they are assigned in teams of three under
 supervision of senior ninjas to further train and enhance their ninja prowess. If deemed fit,
