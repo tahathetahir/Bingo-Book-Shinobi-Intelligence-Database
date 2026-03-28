@@ -1,4 +1,5 @@
-create database Bingo Book : Shinobi Intelligence;
+create database [Bingo Book : Shinobi Intelligence Database];
+go
 use [Bingo Book : Shinobi Intelligence Database];
 
 CREATE TABLE  shinobi (
