@@ -1,4 +1,3 @@
-create database Bingo Book : Shinobi Intelligence;
 use [Bingo Book : Shinobi Intelligence Database];
 
 
@@ -142,7 +141,7 @@ INSERT INTO geninSquad (teamNo, teamMentor, teamMember1, teamMember2, teamMember
 (8, 1, 15, 17, 18, 'Active', 'C', 90),    -- Team Kurenai (IDs for variety)
 (9, 14, 15, 7, 11, 'Active', 'A', 210),   -- Team Guy
 (5, 16, 16, 17, 18, 'Active', 'B', 110),  -- Sand Siblings: Gaara, Temari, Kankuro
-(1, 5, 2, 3, 4, 'Active', 'S', 300),      -- The Legendary Sannin (Minato’s team)
+(1, 5, 2, 3, 4, 'Active', 'S', 300),      -- The Legendary Sannin (Minatoï¿½s team)
 (12, 2, 21, 22, 19, 'Active', 'A', 45),   -- Rain Team: Pain, Konan, Killer Bee
 (13, 20, 23, 24, 25, 'Active', 'A', 60);  -- Rogue Team: Tobi, Deidara, Kisame
 
