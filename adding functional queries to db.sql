@@ -1,7 +1,5 @@
------------------------------------------------------------------------------------------------------------------------------------ TAHA
-
 --SOME INSERT STATEMENT FUNCTIONALITIES
-
+use [Bingo Book : Shinobi Intelligence Database]
 --1
 --Adding a new ninja to the Bingo Book
 Insert into shinobi (ninjaId,ninjaName,dateOfBirth,NinjaStatus,clan,chakraNature,jutsuName,village,ninjaRank,mentorNinjaId)
@@ -81,65 +79,62 @@ group by v.villageName;
 --Retreive shinobis 
 select * from village
 
------------------------------------------------------------------------------------------------------------------------------------ RAFAY
-
-
--- 1. Update the rank of a ninja after promotion
+--14. Update the rank of a ninja after promotion
 UPDATE shinobi
 SET ninjaRank = 'B'
 WHERE ninjaId = 11;
 
--- 2. Change the leader of a rogue association
+--15. Change the leader of a rogue association
 UPDATE rogueAssociation
 SET leader = 22
 WHERE ra_name = 'Taka';
 
--- 3. Delete all ninjas who have retired from the system
+--16. Delete all ninjas who have retired from the system
 DELETE FROM shinobi
 WHERE NinjaStatus = 'Retired';
 
--- 4. Remove a jutsu that is marked obsolete
+--17. Remove a jutsu that is marked obsolete
 DELETE FROM jutsu
 WHERE jutsuStatus = 'Obsolete';
 
--- 5. Retrieve all ninjas belonging to a specific village
+--18. Retrieve all ninjas belonging to a specific village
 SELECT s.ninjaId, s.ninjaName, s.ninjaRank, s.chakraNature, s.clan
 FROM shinobi s
 WHERE s.village = 'Leaf'
 ORDER BY s.ninjaRank, s.ninjaName;
 
--- 6. Find ninjas whose names start with a specific letter
+--19. Find ninjas whose names start with a specific letter
 SELECT ninjaId, ninjaName, village, ninjaRank
 FROM shinobi
 WHERE ninjaName LIKE 'S%'
 ORDER BY ninjaName;
 
--- 7. Get all jutsu with power level greater than a given value
+--20. Get all jutsu with power level greater than a given value
 SELECT jutsuName, jutsuType, powerLevel, chakraConsumption, rankRequired
 FROM jutsu
 WHERE powerLevel > 8.0
 ORDER BY powerLevel DESC;
 
--- 8. List villages with population above a threshold
+--21. List villages with population above a threshold
 SELECT villageName, region, VillagePopulation, powerIndex
 FROM village
 WHERE VillagePopulation > 500000
 ORDER BY VillagePopulation DESC;
 
--- 9. Find all ninjas of a specific rank
+--22. Find all ninjas of a specific rank
 SELECT ninjaId, ninjaName, village, clan, chakraNature
 FROM shinobi
 WHERE ninjaRank = 'S'
 ORDER BY ninjaName;
 
--- 10. Count total number of ninjas in each village
+--23. Count total number of ninjas in each village
 SELECT v.villageName, COUNT(s.ninjaId) AS NinjaCount
 FROM village v
 LEFT JOIN shinobi s ON v.villageName = s.village
 GROUP BY v.villageName
 ORDER BY NinjaCount DESC;
 
--- 11. Find ninja ranks with average chakra consumption above a threshold
+--24. Find ninja ranks with average chakra consumption above a threshold
 SELECT
 	ninjaRank,
 	COUNT(*) AS NinjaCount,
@@ -162,33 +157,33 @@ HAVING AVG	(CASE j.chakraConsumption
 			END) > 2
 ORDER BY AvgChakraWeight DESC;
 
--- 12. Retrieve ninja names along with their village details
+--25. Retrieve ninja names along with their village details
 SELECT s.ninjaId, s.ninjaName, s.ninjaRank,
        v.villageName, v.region, v.powerIndex
 FROM shinobi s
 INNER JOIN village v ON s.village = v.villageName;
 
--- 13. List all jutsu along with the ninja who created them
+--26. List all jutsu along with the ninja who created them
 SELECT j.jutsuName, j.jutsuType, j.powerLevel,
        s.ninjaName AS CreatedBy, cb.creationDate
 FROM jutsu j
 INNER JOIN created_by cb ON j.jutsuName = cb.JutsuName
 INNER JOIN shinobi s     ON cb.NinjaID  = s.ninjaId;
 
--- 14. Display missions along with the squad assigned to them
+--27. Display missions along with the squad assigned to them
 SELECT m.missionId, m.missionObjective, m.missionRank, m.missionStatus, m.revenue,
        g.teamNo, g.SquadRank, g.missionAccomplished
 FROM ninjaMission m
 INNER JOIN geninSquad g ON m.teamAssigned = g.teamNo;
 
--- 15. List all ninjas and their mentors, including those without mentors
+--28. List all ninjas and their mentors, including those without mentors
 SELECT s.ninjaId, s.ninjaName, s.ninjaRank,
        m.ninjaName AS MentorName, m.ninjaRank AS MentorRank
 FROM shinobi s
 LEFT JOIN shinobi m ON s.mentorNinjaId = m.ninjaId
 ORDER BY s.ninjaName;
 
--- 16. Find ninjas who are both clan members and mission participants
+--29. Find ninjas who are both clan members and mission participants
 SELECT DISTINCT s.ninjaId, s.ninjaName, s.clan, s.village
 FROM shinobi s
 INNER JOIN geninSquad g ON (s.ninjaId = g.teamMember1
@@ -197,7 +192,7 @@ INNER JOIN geninSquad g ON (s.ninjaId = g.teamMember1
 INNER JOIN ninjaMission m ON g.teamNo = m.teamAssigned
 WHERE s.clan IS NOT NULL;
 
--- 17. Get ninjas who have never participated in any mission
+--30. Get ninjas who have never participated in any mission
 SELECT s.ninjaId, s.ninjaName, s.village, s.ninjaRank
 FROM shinobi s
 WHERE s.ninjaId NOT IN (
@@ -209,30 +204,30 @@ WHERE s.ninjaId NOT IN (
 )
 ORDER BY s.ninjaName;
 
--- 18. Find the clan with the maximum number of members
+--31. Find the clan with the maximum number of members
 SELECT TOP 1 clanName, clanSize, originVillage, specialAbilities
 FROM clan
 ORDER BY clanSize DESC;
-----------------------------------------------------------------------------------------------------------------------IBRAHIM
---1.AVG powerlevel
+
+--32.AVG powerlevel
 SELECT AVG(powerLevel) as AVG_JUSTU
 FROM jutsu;
 
---2.Max revenue
+--33.Max revenue
 SELECT MAX(revenue) AS MAX_Reveneue
 FROM ninjaMission;
 
---3.Villages sorted by power index
+--34.Villages sorted by power index
 
 SELECT villagename,powerIndex 
 FROM village
 ORDER BY powerIndex;
 
---4.Sum of mission revenue
+--35.Sum of mission revenue
 SELECT SUM(revenue) AS TOTAL_Reveneue
 FROM ninjaMission;
 
---5. Average combat strength 
+--36. Average combat strength 
 SELECT s.village AS VillageName, AVG(j.powerLevel) AS AvgNinjaStrength, COUNT(s.ninjaId) AS TotalNinjas
 FROM shinobi s
 JOIN jutsu j ON s.jutsuName = j.jutsuName
@@ -240,37 +235,37 @@ GROUP BY s.village
 HAVING COUNT(s.ninjaId) > 1
 ORDER BY AvgNinjaStrength DESC;
 
---6. Shinobis sorted by DOB
+--37. Shinobis sorted by DOB
 SELECT ninjaName,dateOfBirth 
 FROM shinobi
 ORDER BY dateOfBirth;
 
---7. list of villages along with the total number of ninjas residing in each
+--38. list of villages along with the total number of ninjas residing in each
 SELECT v.villageName,COUNT(s.ninjaId)
 FROM village v
 JOIN shinobi s on s.village=v.villageName
 GROUP BY v.villageName
 HAVING COUNT(s.ninjaId)>1
 
---8. Jutsu and their creators
+--39. Jutsu and their creators
 SELECT s.NinjaID,j.jutsuName,j.jutsuType AS Jutsu_type,s.ninjaName AS Creator_name ,j.powerLevel
 FROM shinobi s
 JOIN created_by c ON s.ninjaId = c.NinjaID
 JOIN jutsu j ON c.JutsuName=j.jutsuName;
 
---9.Clan and their leaders
+--40.Clan and their leaders
 SELECT l.NinjaId,c.clanName,s.ninjaName AS leader_name
 FROM clan c
 JOIN led_by l ON c.clanName=l.clanName
 JOIN shinobi s on s.ninjaId=l.NinjaId;
 
---10.Ninjas from 2 specific villages
+--41.Ninjas from 2 specific villages
 SELECT ninjaName,village
 FROM shinobi
 WHERE village = 'Leaf ' 
    OR village = 'Rain ';
 
---11.Villages having more ninjas than average
+--42.Villages having more ninjas than average
 SELECT v.villageName,COUNT(s.ninjaId) AS NinjaCount
 FROM village v
 JOIN shinobi s ON v.villageName = s.village
@@ -284,7 +279,7 @@ HAVING COUNT(s.ninjaId) > (
     ) AS VillageCounts
 );
 
---12.Jutsus having more power than specific jutsu
+--43.Jutsus having more power than specific jutsu
 SELECT jutsuName,jutsuType,powerLevel
 FROM jutsu
 WHERE powerLevel > ALL (
@@ -292,14 +287,14 @@ WHERE powerLevel > ALL (
     FROM jutsu 
     WHERE jutsuType = 'Genjutsu'
 );
---13.Squads with mentor names having more than 1 member under it
+--44.Squads with mentor names having more than 1 member under it
 SELECT m.ninjaName AS MentorName, COUNT(s.ninjaId) AS Ninja_count
 FROM shinobi m
 JOIN shinobi s ON m.ninjaId = s.mentorNinjaId
 GROUP BY m.ninjaName
 HAVING COUNT(s.ninjaId) > 1;
 
---14.Village abandoned
+--45.Village abandoned
 SELECT villageName 
 FROM village
 WHERE villageName NOT IN (
@@ -308,7 +303,7 @@ WHERE villageName NOT IN (
     WHERE LeaderShipStatus = 'Active'
 );
 
---15.Ninja who isn't in standoff
+--46.Ninja who isn't in standoff
 SELECT ninjaName 
 FROM shinobi
 WHERE ninjaId IN (SELECT ninjaId1 FROM standoff UNION SELECT ninjaId2 FROM standoff) -- Participated
@@ -322,7 +317,7 @@ AND ninjaId NOT IN (
     WHERE winnerNinjaId IS NOT NULL
 );
 
---16.Jutsu owned/used by no-one
+--47.Jutsu owned/used by no-one
 SELECT j.jutsuName, j.jutsuType
 FROM jutsu j
 WHERE j.jutsuName NOT IN (
@@ -331,7 +326,7 @@ WHERE j.jutsuName NOT IN (
     WHERE s.jutsuName IS NOT NULL
 );
 
---17.Villages and their details
+--48.Villages and their details
 SELECT 
     v.villageName,
     (SELECT COUNT(*) FROM shinobi s WHERE s.village = v.villageName) AS NinjaCount,
@@ -339,7 +334,7 @@ SELECT
     (SELECT COUNT(*) FROM rogueAssociation ra WHERE ra.originNationName = v.villageName) AS RogueAssocCount
 FROM village v;
 
---18.Jutsus and their details
+--49.Jutsus and their details
 SELECT 
     j.jutsuName,
     j.jutsuStatus,
@@ -351,26 +346,26 @@ LEFT JOIN shinobi s_creator ON cb.NinjaID = s_creator.ninjaId
 LEFT JOIN shinobi s_users ON j.jutsuName = s_users.jutsuName
 GROUP BY j.jutsuName, j.jutsuStatus, s_creator.ninjaName;
 
---19.Min cooldown time of jutsu
+--50.Min cooldown time of jutsu
 SELECT MIN(coolDownTime) AS Shortest_Cooldown
 FROM jutsu;
 SELECT TOP 5 jutsuName, coolDownTime 
 FROM jutsu 
 ORDER BY coolDownTime ASC;
 
---20.Clans having more than specific amount
+--51.Clans having more than specific amount
 SELECT clanName,clanSize,specialAbilities,originVillage
 FROM clan
 WHERE clanSize > 50
 ORDER BY clanSize DESC;
 
---21.Full clan details with missing details 
+--52.Full clan details with missing details 
 SELECT c.clanName,c.specialAbilities,s.ninjaName AS LeaderName,lb.StartingDate
 FROM clan c
 FULL OUTER JOIN led_by lb ON c.clanName = lb.clanName
 LEFT JOIN shinobi s ON lb.NinjaId = s.ninjaId;
 
---22.Missions sorted by revenue
+--53.Missions sorted by revenue
 SELECT missionId,missionObjective,missionRank,revenue
 FROM ninjaMission
 ORDER BY revenue DESC;
