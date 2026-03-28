@@ -213,3 +213,165 @@ ORDER BY s.ninjaName;
 SELECT TOP 1 clanName, clanSize, originVillage, specialAbilities
 FROM clan
 ORDER BY clanSize DESC;
+----------------------------------------------------------------------------------------------------------------------IBRAHIM
+--1.AVG powerlevel
+SELECT AVG(powerLevel) as AVG_JUSTU
+FROM jutsu;
+
+--2.Max revenue
+SELECT MAX(revenue) AS MAX_Reveneue
+FROM ninjaMission;
+
+--3.Villages sorted by power index
+
+SELECT villagename,powerIndex 
+FROM village
+ORDER BY powerIndex;
+
+--4.Sum of mission revenue
+SELECT SUM(revenue) AS TOTAL_Reveneue
+FROM ninjaMission;
+
+--5. Average combat strength 
+SELECT s.village AS VillageName, AVG(j.powerLevel) AS AvgNinjaStrength, COUNT(s.ninjaId) AS TotalNinjas
+FROM shinobi s
+JOIN jutsu j ON s.jutsuName = j.jutsuName
+GROUP BY s.village
+HAVING COUNT(s.ninjaId) > 1
+ORDER BY AvgNinjaStrength DESC;
+
+--6. Shinobis sorted by DOB
+SELECT ninjaName,dateOfBirth 
+FROM shinobi
+ORDER BY dateOfBirth;
+
+--7. list of villages along with the total number of ninjas residing in each
+SELECT v.villageName,COUNT(s.ninjaId)
+FROM village v
+JOIN shinobi s on s.village=v.villageName
+GROUP BY v.villageName
+HAVING COUNT(s.ninjaId)>1
+
+--8. Jutsu and their creators
+SELECT s.NinjaID,j.jutsuName,j.jutsuType AS Jutsu_type,s.ninjaName AS Creator_name ,j.powerLevel
+FROM shinobi s
+JOIN created_by c ON s.ninjaId = c.NinjaID
+JOIN jutsu j ON c.JutsuName=j.jutsuName;
+
+--9.Clan and their leaders
+SELECT l.NinjaId,c.clanName,s.ninjaName AS leader_name
+FROM clan c
+JOIN led_by l ON c.clanName=l.clanName
+JOIN shinobi s on s.ninjaId=l.NinjaId;
+
+--10.Ninjas from 2 specific villages
+SELECT ninjaName,village
+FROM shinobi
+WHERE village = 'Leaf ' 
+   OR village = 'Rain ';
+
+--11.Villages having more ninjas than average
+SELECT v.villageName,COUNT(s.ninjaId) AS NinjaCount
+FROM village v
+JOIN shinobi s ON v.villageName = s.village
+GROUP BY v.villageName
+HAVING COUNT(s.ninjaId) > (
+    SELECT AVG(VillageCounts.Total)
+    FROM (
+        SELECT COUNT(ninjaId) AS Total
+        FROM shinobi
+        GROUP BY village
+    ) AS VillageCounts
+);
+
+--12.Jutsus having more power than specific jutsu
+SELECT jutsuName,jutsuType,powerLevel
+FROM jutsu
+WHERE powerLevel > ALL (
+    SELECT powerLevel 
+    FROM jutsu 
+    WHERE jutsuType = 'Genjutsu'
+);
+--13.Squads with mentor names having more than 1 member under it
+SELECT m.ninjaName AS MentorName, COUNT(s.ninjaId) AS Ninja_count
+FROM shinobi m
+JOIN shinobi s ON m.ninjaId = s.mentorNinjaId
+GROUP BY m.ninjaName
+HAVING COUNT(s.ninjaId) > 1;
+
+--14.Village abandoned
+SELECT villageName 
+FROM village
+WHERE villageName NOT IN (
+    SELECT villageName 
+    FROM presided_by 
+    WHERE LeaderShipStatus = 'Active'
+);
+
+--15.Ninja who isn't in standoff
+SELECT ninjaName 
+FROM shinobi
+WHERE ninjaId IN (SELECT ninjaId1 FROM standoff UNION SELECT ninjaId2 FROM standoff) -- Participated
+AND ninjaId NOT IN (
+    SELECT 
+        CASE 
+            WHEN ninjaId1 = winnerNinjaId THEN ninjaId2 
+            ELSE ninjaId1 
+        END
+    FROM standoff
+    WHERE winnerNinjaId IS NOT NULL
+);
+
+--16.Jutsu owned/used by no-one
+SELECT j.jutsuName, j.jutsuType
+FROM jutsu j
+WHERE j.jutsuName NOT IN (
+    SELECT DISTINCT s.jutsuName 
+    FROM shinobi s 
+    WHERE s.jutsuName IS NOT NULL
+);
+
+--17.Villages and their details
+SELECT 
+    v.villageName,
+    (SELECT COUNT(*) FROM shinobi s WHERE s.village = v.villageName) AS NinjaCount,
+    (SELECT COUNT(*) FROM ninjaMission m WHERE m.clientNation = v.villageName) AS MissionCount,
+    (SELECT COUNT(*) FROM rogueAssociation ra WHERE ra.originNationName = v.villageName) AS RogueAssocCount
+FROM village v;
+
+--18.Jutsus and their details
+SELECT 
+    j.jutsuName,
+    j.jutsuStatus,
+    COALESCE(s_creator.ninjaName, 'Unknown') AS Creator,
+    COUNT(s_users.ninjaId) AS NumberOfUsers
+FROM jutsu j
+LEFT JOIN created_by cb ON j.jutsuName = cb.JutsuName
+LEFT JOIN shinobi s_creator ON cb.NinjaID = s_creator.ninjaId
+LEFT JOIN shinobi s_users ON j.jutsuName = s_users.jutsuName
+GROUP BY j.jutsuName, j.jutsuStatus, s_creator.ninjaName;
+
+--19.Min cooldown time of jutsu
+SELECT MIN(coolDownTime) AS Shortest_Cooldown
+FROM jutsu;
+SELECT TOP 5 jutsuName, coolDownTime 
+FROM jutsu 
+ORDER BY coolDownTime ASC;
+
+--20.Clans having more than specific amount
+SELECT clanName,clanSize,specialAbilities,originVillage
+FROM clan
+WHERE clanSize > 50
+ORDER BY clanSize DESC;
+
+--21.Full clan details with missing details 
+SELECT c.clanName,c.specialAbilities,s.ninjaName AS LeaderName,lb.StartingDate
+FROM clan c
+FULL OUTER JOIN led_by lb ON c.clanName = lb.clanName
+LEFT JOIN shinobi s ON lb.NinjaId = s.ninjaId;
+
+--22.Missions sorted by revenue
+SELECT missionId,missionObjective,missionRank,revenue
+FROM ninjaMission
+ORDER BY revenue DESC;
+
