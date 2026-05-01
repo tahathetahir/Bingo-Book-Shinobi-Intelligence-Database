@@ -1104,14 +1104,15 @@ BEGIN TRY
     
     DECLARE @BannedElement VARCHAR(50) = 'Fire';
 
-    -- 1. Flag Jutsu as Forbidden
+    --Flag Jutsu as Forbidden
     UPDATE jutsu SET JutsuStatus = 'Forbidden' 
     WHERE elementalNature = @BannedElement AND JutsuStatus != 'Forbidden';
 
     UPDATE shinobi SET NinjaStatus = 'Under Surveillance'
     WHERE jutsuName IN (
         SELECT jutsuName FROM jutsu WHERE elementalNature = @BannedElement
-    ) AND NinjaStatus = 'Alive';
+    ) 
+	AND NinjaStatus = 'Alive';
 
     COMMIT TRANSACTION;
 END TRY
@@ -1229,14 +1230,13 @@ GO
 
 --Historical Rivalry Re-enactment
 
-SELECT 
-    s1.ninjaName AS Ninja1, 
-    s1.village AS Village1,
-    s2.ninjaName AS Ninja2, 
-    s2.village AS Village2,
-    COUNT(st.Slocation) AS TotalEncounters,
-    SUM(CASE WHEN st.winnerNinjaId = s1.ninjaId THEN 1 ELSE 0 END) AS Ninja1Wins,
-    SUM(CASE WHEN st.winnerNinjaId = s2.ninjaId THEN 1 ELSE 0 END) AS Ninja2Wins
+SELECT s1.ninjaName AS Ninja1, s1.village AS Village1,
+       s2.ninjaName AS Ninja2, s2.village AS Village2,
+       COUNT(st.Slocation) AS TotalEncounters,
+       SUM(CASE WHEN st.winnerNinjaId = s1.ninjaId THEN 1
+		   ELSE 0 END) AS Ninja1Wins,
+       SUM(CASE WHEN st.winnerNinjaId = s2.ninjaId THEN 1
+		   ELSE 0 END) AS Ninja2Wins
 FROM standoff st
 JOIN shinobi s1 ON st.ninjaId1 = s1.ninjaId
 JOIN shinobi s2 ON st.ninjaId2 = s2.ninjaId
@@ -1248,12 +1248,7 @@ GO
 
 
 --Inventory Black Market Audit
-SELECT 
-    i.Iname,
-    i.rarity,
-    i.ownedByNation,
-    i.Icount,
-    i.worth,
+SELECT i.Iname,i.rarity,i.ownedByNation,i.Icount,i.worth,
     CASE 
         WHEN i.Icount < 100 AND i.rarity = 'Common' THEN 'High Risk of Black Market Leakage'
         WHEN i.Icount < 5 AND i.rarity IN ('Rare', 'Legendary') THEN 'Critical Shortage - Investigate'
@@ -1267,9 +1262,7 @@ GO
 --Mentor-Pupil Power Creep Analysis
 
 WITH PupilAverages AS (
-    SELECT 
-        s.mentorNinjaId,
-        AVG(j.powerLevel) AS AvgPupilPower
+    SELECT s.mentorNinjaId, AVG(j.powerLevel) AS AvgPupilPower
     FROM shinobi s
     JOIN jutsu j ON s.jutsuName = j.jutsuName
     WHERE s.mentorNinjaId IS NOT NULL
@@ -1296,7 +1289,9 @@ BEGIN TRY
     DECLARE @CriticalVillage VARCHAR(50) = 'Sand';
     DECLARE @PopulationThreshold INT = 3000;
 
-    IF (SELECT VillagePopulation FROM village WHERE villageName = @CriticalVillage) < @PopulationThreshold
+    IF (SELECT VillagePopulation
+		FROM village
+		WHERE villageName = @CriticalVillage) < @PopulationThreshold
     BEGIN
         -- Assign Genin and Chunin to defensive status
         UPDATE shinobi 
