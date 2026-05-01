@@ -982,14 +982,342 @@ HAVING COUNT(*) > 1;
 
 
 
+--The Traitor’s Purge
+BEGIN TRY
+    BEGIN TRANSACTION;
+    
+    DECLARE @TraitorId INT = 8; -- Sasuke Uchiha
+    DECLARE @RogueOrgName VARCHAR(50) = 'Taka';
+
+    UPDATE shinobi 
+    SET village = NULL, clan = NULL, NinjaStatus = 'Rogue'
+    WHERE ninjaId = @TraitorId;
+
+    UPDATE rogueAssociation 
+    SET memberCount = memberCount + 1 
+    WHERE ra_name = @RogueOrgName;
+
+    DECLARE @NewMissionId INT = (SELECT MAX(missionId) + 1 FROM ninjaMission);
+    INSERT INTO ninjaMission (missionId, missionObjective, missionRank, missionType, missionStatus, clientNation)
+    VALUES (@NewMissionId, 'Eliminate Defector', 'S', 'Assassination', 'Open', 'Leaf');
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+END CATCH;
+GO
+
+
+--Kage Succession
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @VillageName VARCHAR(50) = 'Leaf';
+    DECLARE @NewKageId INT = 6; -- Kakashi
+    DECLARE @OldKageId INT = (SELECT ninjaId 
+								FROM presided_by 
+								WHERE villageName = @VillageName AND LeaderShipStatus = 'Active');
+
+    UPDATE presided_by SET LeaderShipStatus = 'Former'
+    WHERE ninjaId = @OldKageId AND villageName = @VillageName;
+
+    INSERT INTO presided_by (villageName, ninjaId, leaderShipStartingDate, LeaderShipStatus)
+    VALUES (@VillageName, @NewKageId, GETDATE(), 'Active');
+
+    DECLARE @KagePower DECIMAL(3,2) = (SELECT j.powerLevel 
+										FROM shinobi s 
+										JOIN jutsu j ON s.jutsuName = j.jutsuName 
+										WHERE s.ninjaId = @NewKageId);
+    UPDATE village 
+    SET powerIndex = CASE WHEN powerIndex + (@KagePower / 10.0) <= 9.99 THEN powerIndex + (@KagePower / 10.0) ELSE 9.99 END
+    WHERE villageName = @VillageName;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+END CATCH;
+GO
+
+
+--The "Sannin" Legacy Audit
+
+WITH StudentOutcomes AS (
+    SELECT 
+        mentorNinjaId,
+        COUNT(ninjaId) AS TotalStudents,
+        SUM(CASE WHEN ninjaRank IN ('S', 'H', 'K') THEN 1 ELSE 0 END) AS SRankStudents,
+        SUM(CASE WHEN NinjaStatus IN ('Rogue', 'Deceased') THEN 1 ELSE 0 END) AS LostStudents
+    FROM shinobi
+    WHERE mentorNinjaId IS NOT NULL
+    GROUP BY mentorNinjaId
+)
+SELECT 
+    m.ninjaName AS MentorName,
+    o.TotalStudents,
+    (o.SRankStudents * 100.0 / o.TotalStudents) AS ElitePercentage,
+    (o.LostStudents * 100.0 / o.TotalStudents) AS FailurePercentage,
+    ((o.SRankStudents * 2.0) - o.LostStudents) AS PrestigeScore
+FROM StudentOutcomes o
+JOIN shinobi m ON o.mentorNinjaId = m.ninjaId
+WHERE o.TotalStudents > 0;
+GO
+
+
+--Village Resource War Simulator
+SELECT 
+    v.villageName,
+    v.VillagePopulation,
+    (v.VillagePopulation * 1.5) AS RequiredSustenanceWorth, 
+    ISNULL(SUM(i.worth * i.Icount), 0) AS CurrentInventoryWorth,
+    CASE 
+        WHEN ISNULL(SUM(i.worth * i.Icount), 0) < (v.VillagePopulation * 1.5) THEN 'Eligible for War (Desperation)'
+        ELSE 'Stable'
+    END AS WarStatus,
+    (SELECT ISNULL(SUM(inv.Icount), 0) FROM inventory inv 
+     WHERE inv.rarity = 'Legendary' AND inv.ownedByNation != v.villageName) AS NeighborLegendaryItemCount
+FROM village v
+LEFT JOIN inventory i ON v.villageName = i.ownedByNation
+GROUP BY v.villageName, v.VillagePopulation;
+GO
+
+--Chunin Exam Corruption Detector
+
+SELECT 
+    c.ChuninYear,
+    c.MainSponsorClan,
+    w.ninjaName AS WinnerName,
+    w.clan AS WinnerClan,
+    CASE 
+        WHEN w.clan = c.MainSponsorClan THEN 'High Probability of Corruption'
+        ELSE 'Clean Competition'
+    END AS CorruptionFlag
+FROM chuninCompetition c
+JOIN shinobi w ON c.winnerNinjaId = w.ninjaId;
+GO
+
+
+--Forbiddeen Jutsu Containment
+BEGIN TRY
+    BEGIN TRANSACTION;
+    
+    DECLARE @BannedElement VARCHAR(50) = 'Fire';
+
+    -- 1. Flag Jutsu as Forbidden
+    UPDATE jutsu SET JutsuStatus = 'Forbidden' 
+    WHERE elementalNature = @BannedElement AND JutsuStatus != 'Forbidden';
+
+    UPDATE shinobi SET NinjaStatus = 'Under Surveillance'
+    WHERE jutsuName IN (
+        SELECT jutsuName FROM jutsu WHERE elementalNature = @BannedElement
+    ) AND NinjaStatus = 'Alive';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+END CATCH;
+GO
 
 
 
+--Clan Bloodline Purity Report
+SELECT 
+    c.clanName,
+    c.specialAbilities AS ClanSpecialty,
+    s.ninjaName AS ClanMember,
+    j.jutsuName,
+    j.elementalNature AS ActualNature,
+    CASE 
+        WHEN c.clanName = 'Hyuga' AND j.elementalNature != 'None' THEN 'Divergent'
+        WHEN c.clanName = 'Uchiha' AND j.elementalNature != 'Fire' THEN 'Divergent'
+        ELSE 'Pure'
+    END AS BloodlineStatus
+FROM clan c
+JOIN shinobi s ON c.clanName = s.clan
+JOIN jutsu j ON s.jutsuName = j.jutsuName
+WHERE s.NinjaStatus = 'Alive';
+GO
+
+
+--The "Perfect Counter" Matchmaker
+
+DECLARE @TargetId INT = 24; -- Deidara (Earth)
+DECLARE @TargetElement VARCHAR(50) = (SELECT chakraNature FROM shinobi WHERE ninjaId = @TargetId);
+
+SELECT 
+    ally.ninjaName, 
+    ally.ninjaRank, 
+    ally.chakraNature,
+    ally.jutsuName
+FROM shinobi ally
+WHERE ally.NinjaStatus = 'Alive' 
+  AND ally.ninjaId != @TargetId
+  AND ally.chakraNature = CASE 
+      WHEN @TargetElement = 'Fire' THEN 'Water'
+      WHEN @TargetElement = 'Water' THEN 'Earth'
+      WHEN @TargetElement = 'Earth' THEN 'Lightning'
+      WHEN @TargetElement = 'Lightning' THEN 'Wind'
+      WHEN @TargetElement = 'Wind' THEN 'Fire'
+  END;
+GO
+
+
+--Squad Financial Performance Review
+SELECT 
+    g.teamNo,
+    m_leader.ninjaName AS MentorName,
+    ISNULL(SUM(nm.revenue), 0) AS TotalMissionRevenue,
+    COUNT(nm.missionId) AS MissionsUndertaken,
+    CASE 
+        WHEN COUNT(nm.missionId) > 0 THEN ISNULL(SUM(nm.revenue), 0) / COUNT(nm.missionId) 
+        ELSE 0 
+    END AS AverageRevenuePerMission
+FROM geninSquad g
+JOIN shinobi m_leader ON g.teamMentor = m_leader.ninjaId
+LEFT JOIN ninjaMission nm ON g.teamNo = nm.teamAssigned
+GROUP BY g.teamNo, m_leader.ninjaName
+ORDER BY TotalMissionRevenue DESC;
+GO
+
+
+--Global Power Index Re-ranking
+
+UPDATE village
+SET powerIndex = (
+    SELECT 
+        CASE 
+            WHEN AVG(j.powerLevel) IS NULL THEN 5.0
+            ELSE (AVG(j.powerLevel) * 0.7) + 
+                 (CASE WHEN village.tailBeast IS NOT NULL THEN 1.5 ELSE 0 END) +
+                 (village.VillagePopulation / 10000.0)
+        END
+    FROM shinobi s
+    LEFT JOIN jutsu j ON s.jutsuName = j.jutsuName
+    WHERE s.village = village.villageName AND s.NinjaStatus = 'Alive'
+);
+GO
+
+
+--The "Carry" Identification Audit
+
+WITH SquadWins AS (
+    SELECT 
+        g.teamNo,
+        s1.ninjaName AS Member1, (SELECT COUNT(*) FROM standoff WHERE winnerNinjaId = g.teamMember1) AS M1Wins,
+        s2.ninjaName AS Member2, (SELECT COUNT(*) FROM standoff WHERE winnerNinjaId = g.teamMember2) AS M2Wins,
+        s3.ninjaName AS Member3, (SELECT COUNT(*) FROM standoff WHERE winnerNinjaId = g.teamMember3) AS M3Wins
+    FROM geninSquad g
+    JOIN shinobi s1 ON g.teamMember1 = s1.ninjaId
+    JOIN shinobi s2 ON g.teamMember2 = s2.ninjaId
+    JOIN shinobi s3 ON g.teamMember3 = s3.ninjaId
+)
+SELECT 
+    teamNo,
+    Member1, M1Wins,
+    Member2, M2Wins,
+    Member3, M3Wins,
+    CASE 
+        WHEN M1Wins > (M2Wins + M3Wins) * 2 AND M1Wins > 0 THEN Member1 + ' is carrying the squad.'
+        WHEN M2Wins > (M1Wins + M3Wins) * 2 AND M2Wins > 0 THEN Member2 + ' is carrying the squad.'
+        WHEN M3Wins > (M1Wins + M2Wins) * 2 AND M3Wins > 0 THEN Member3 + ' is carrying the squad.'
+        ELSE 'Balanced Squad'
+    END AS CarryStatus
+FROM SquadWins;
+GO
+
+--Historical Rivalry Re-enactment
+
+SELECT 
+    s1.ninjaName AS Ninja1, 
+    s1.village AS Village1,
+    s2.ninjaName AS Ninja2, 
+    s2.village AS Village2,
+    COUNT(st.Slocation) AS TotalEncounters,
+    SUM(CASE WHEN st.winnerNinjaId = s1.ninjaId THEN 1 ELSE 0 END) AS Ninja1Wins,
+    SUM(CASE WHEN st.winnerNinjaId = s2.ninjaId THEN 1 ELSE 0 END) AS Ninja2Wins
+FROM standoff st
+JOIN shinobi s1 ON st.ninjaId1 = s1.ninjaId
+JOIN shinobi s2 ON st.ninjaId2 = s2.ninjaId
+WHERE s1.village != s2.village AND st.Sstatus = 'Completed'
+GROUP BY s1.ninjaName, s1.village, s2.ninjaName, s2.village
+HAVING COUNT(st.Slocation) > 0;
+GO
 
 
 
+--Inventory Black Market Audit
+SELECT 
+    i.Iname,
+    i.rarity,
+    i.ownedByNation,
+    i.Icount,
+    i.worth,
+    CASE 
+        WHEN i.Icount < 100 AND i.rarity = 'Common' THEN 'High Risk of Black Market Leakage'
+        WHEN i.Icount < 5 AND i.rarity IN ('Rare', 'Legendary') THEN 'Critical Shortage - Investigate'
+        ELSE 'Secure'
+    END AS SecurityAuditStatus
+FROM inventory i
+ORDER BY i.Icount ASC;
+GO
 
 
+--Mentor-Pupil Power Creep Analysis
+
+WITH PupilAverages AS (
+    SELECT 
+        s.mentorNinjaId,
+        AVG(j.powerLevel) AS AvgPupilPower
+    FROM shinobi s
+    JOIN jutsu j ON s.jutsuName = j.jutsuName
+    WHERE s.mentorNinjaId IS NOT NULL
+    GROUP BY s.mentorNinjaId
+)
+SELECT 
+    m.ninjaName AS MentorName,
+    jm.powerLevel AS MentorPower,
+    p.AvgPupilPower,
+    CASE 
+        WHEN p.AvgPupilPower > jm.powerLevel THEN 'New Generation Surpassed Mentor'
+        ELSE 'Mentor Remains Superior'
+    END AS GenerationStatus
+FROM PupilAverages p
+JOIN shinobi m ON p.mentorNinjaId = m.ninjaId
+JOIN jutsu jm ON m.jutsuName = jm.jutsuName;
+GO
+
+
+--The "Last Stand" Defense Protocol
+BEGIN TRY
+    BEGIN TRANSACTION;
+    
+    DECLARE @CriticalVillage VARCHAR(50) = 'Sand';
+    DECLARE @PopulationThreshold INT = 3000;
+
+    IF (SELECT VillagePopulation FROM village WHERE villageName = @CriticalVillage) < @PopulationThreshold
+    BEGIN
+        -- Assign Genin and Chunin to defensive status
+        UPDATE shinobi 
+        SET NinjaStatus = 'Village Defense'
+        WHERE village = @CriticalVillage 
+          AND NinjaStatus = 'Alive'
+          AND ninjaRank IN ('G', 'C');
+          
+        PRINT 'Last Stand Protocol Initiated.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'Village population stable. Protocol aborted.';
+    END
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+END CATCH;
+GO
 
 
 
