@@ -795,3 +795,242 @@ on i.ownedByNation = v.villageName
 select * from jutsu 
 where jutsuName like '%fist%' 
 
+--Shinobi Master profile
+CREATE VIEW View_Shinobi_Detailed_Profiles AS
+SELECT s.ninjaName, s.ninjaRank, c.clanName, v.villageName, v.region, j.jutsuName, j.powerLevel
+FROM shinobi s
+LEFT JOIN clan c ON s.clan = c.clanName
+JOIN village v ON s.village = v.villageName
+LEFT JOIN jutsu j ON s.jutsuName = j.jutsuName;
+
+--60 Village Power Rankings
+
+CREATE VIEW View_Village_Strength_Audit AS
+SELECT v.villageName, v.powerIndex, COUNT(s.ninjaId) AS total_shinobi,
+       SUM(CASE WHEN s.ninjaRank = 'S' THEN 1 ELSE 0 END) AS s_rank_count
+FROM village v
+LEFT JOIN shinobi s ON v.villageName = s.village
+GROUP BY v.villageName, v.powerIndex;
+
+--61 Clan Leadership Hierarchy
+
+CREATE VIEW View_Clan_Leadership AS
+SELECT c.clanName, s.ninjaName AS LeaderName, l.StartingDate, c.originVillage
+FROM clan c
+JOIN Led_by l ON c.clanName = l.clanName
+JOIN shinobi s ON l.NinjaId = s.ninjaId;
+
+--62 Mission Revenue Analytics
+CREATE VIEW View_Mission_Revenue_Stats AS
+SELECT clientNation, missionRank, COUNT(*) AS TotalMissions, SUM(revenue) AS TotalRevenue
+FROM ninjaMission
+GROUP BY clientNation, missionRank;
+
+--63 Standoff History Tracker
+CREATE VIEW View_Standoff_Results AS
+SELECT s1.ninjaName AS Combatant1, s2.ninjaName AS Combatant2, 
+       sw.ninjaName AS Winner, st.Slocation, st.Sstatus
+FROM standoff st
+JOIN shinobi s1 ON st.ninjaId1 = s1.ninjaId
+JOIN shinobi s2 ON st.ninjaId2 = s2.ninjaId
+LEFT JOIN shinobi sw ON st.winnerNinjaId = sw.ninjaId;
+
+--POCEDURES
+
+--64 Get Team Performance
+CREATE PROCEDURE GetSquadPerformance @TeamID int
+AS
+SELECT g.teamNo, g.teamMentor, m.missionObjective, m.revenue, m.missionRank
+FROM geninSquad g
+JOIN ninjaMission m ON g.teamNo = m.teamAssigned
+WHERE g.teamNo = @TeamID;
+
+
+--65 Update Ninja Status
+CREATE PROCEDURE UpdateNinjaStatus @ID int, @Status varchar(50)
+AS
+UPDATE shinobi SET NinjaStatus = @Status WHERE ninjaId = @ID;
+
+--66 Filter Jutsu by Element
+CREATE PROCEDURE GetHighPowerJutsu @Nature varchar(50), @MinPower decimal(3,2)
+AS
+SELECT * FROM jutsu WHERE elementalNature = @Nature AND powerLevel >= @MinPower;
+
+--67 Find Mentor Chain
+CREATE PROCEDURE GetMentorHierarchy @NinjaID int
+AS
+SELECT s1.ninjaName AS Pupil, s2.ninjaName AS Mentor, s3.ninjaName AS GrandMentor
+FROM shinobi s1
+LEFT JOIN shinobi s2 ON s1.mentorNinjaId = s2.ninjaId
+LEFT JOIN shinobi s3 ON s2.mentorNinjaId = s3.ninjaId
+WHERE s1.ninjaId = @NinjaID;
+
+--68 Village Inventory Audit
+CREATE PROCEDURE GetVillageWealth @Nation varchar(50)
+AS
+SELECT Iname, (worth * Icount) AS TotalValue 
+FROM inventory 
+WHERE ownedByNation = @Nation;
+
+
+--Transactions
+
+--69 New Kage Appointment
+BEGIN TRANSACTION;
+UPDATE presided_by SET LeaderShipStatus = 'Former' WHERE villageName = 'Leaf' AND LeaderShipStatus = 'Active';
+INSERT INTO presided_by (villageName, ninjaId, leaderShipStartingDate, LeaderShipStatus) 
+VALUES ('Leaf', 7, '2026-04-28', 'Active');
+COMMIT;
+
+--70 Mission Reward Distribution
+BEGIN TRANSACTION;
+INSERT INTO ninjaMission (missionId, missionObjective, teamAssigned, revenue) VALUES (116, 'Asset Recovery', 7, 5000);
+UPDATE geninSquad SET missionAccomplished = missionAccomplished + 1 WHERE teamNo = 7;
+COMMIT;
+
+--71 Rogue Defection
+BEGIN TRANSACTION;
+UPDATE shinobi SET village = NULL, clan = NULL, NinjaStatus = 'Rogue' WHERE ninjaId = 8;
+UPDATE rogueAssociation SET memberCount = memberCount + 1 WHERE ra_name = 'Taka';
+COMMIT;
+
+
+--72 Inventory Trade
+
+BEGIN TRANSACTION;
+UPDATE inventory SET Icount = Icount - 10 WHERE Iname = 'Paper Bomb' AND ownedByNation = 'Leaf';
+UPDATE inventory SET Icount = Icount + 10 WHERE Iname = 'Paper Bomb' AND ownedByNation = 'Sand';
+COMMIT;
+
+
+--73 Clan Merger
+BEGIN TRANSACTION;
+UPDATE shinobi SET village = 'Mist' WHERE clan = 'Hoshigaki';
+UPDATE clan SET originVillage = 'Mist' WHERE clanName = 'Hoshigaki';
+COMMIT;
+
+--For Frontend specifically
+
+--74 Win rate calculator
+SELECT s.ninjaName, 
+       COUNT(st.winnerNinjaId) AS Wins,
+       (CAST(COUNT(st.winnerNinjaId) AS FLOAT) / NULLIF((SELECT COUNT(*) FROM standoff WHERE ninjaId1 = s.ninjaId OR ninjaId2 = s.ninjaId), 0)) * 100 AS WinRate
+FROM shinobi s
+LEFT JOIN standoff st ON s.ninjaId = st.winnerNinjaId
+GROUP BY s.ninjaName, s.ninjaId;
+
+
+--75 The "Strongest Team" 
+SELECT g.teamNo, AVG(j.powerLevel) as AvgTeamPower
+FROM geninSquad g
+JOIN shinobi s ON s.ninjaId IN (g.teamMember1, g.teamMember2, g.teamMember3)
+JOIN jutsu j ON s.jutsuName = j.jutsuName
+GROUP BY g.teamNo
+ORDER BY AvgTeamPower DESC;
+
+--76 Bounty List
+SELECT ra.ra_name, s.ninjaName, j.jutsuName, j.powerLevel
+FROM rogueAssociation ra
+JOIN shinobi s ON ra.leader = s.ninjaId
+JOIN jutsu j ON s.jutsuName = j.jutsuName
+WHERE j.rankRequired = 'S';
+
+--77 Clan Population Analysis
+SELECT clanName, clanSize, originVillage
+FROM clan c1
+WHERE clanSize < (SELECT AVG(clanSize) FROM clan c2 WHERE c2.originVillage = c1.originVillage);
+
+--78 Multi Elemental Jutsu Master
+SELECT s.ninjaName, s.chakraNature, j.jutsuName, j.elementalNature
+FROM shinobi s
+JOIN jutsu j ON s.jutsuName = j.jutsuName
+WHERE s.chakraNature <> j.elementalNature AND j.elementalNature <> 'None';
+
+--79 Economic Disparity
+SELECT v.villageName, (SUM(i.worth * i.Icount) / v.VillagePopulation) as WealthPerCapita
+FROM village v
+JOIN inventory i ON v.villageName = i.ownedByNation
+GROUP BY v.villageName, v.VillagePopulation;
+
+--80 Chunin Competition "Underdog"
+SELECT c.ChuninYear, s.ninjaName, s.ninjaRank
+FROM chuninCompetition c
+JOIN shinobi s ON c.winnerNinjaId = s.ninjaId
+WHERE s.ninjaRank = 'G';
+
+--81 The "Sannin" Successors
+SELECT s.ninjaName AS Student, m.ninjaName AS Mentor
+FROM shinobi s
+JOIN shinobi m ON s.mentorNinjaId = m.ninjaId
+WHERE m.ninjaName IN ('Jiraiya', 'Tsunade Senju', 'Orochimaru');
+
+--82 Jutsu Over-Consumption
+SELECT jutsuName, powerLevel, chakraConsumption
+FROM jutsu
+WHERE chakraConsumption = 'Extreme' AND powerLevel < 9.0;
+
+--83 Deadly Rivals
+SELECT s1.ninjaName, s2.ninjaName, COUNT(*) as DuelCount
+FROM standoff st
+JOIN shinobi s1 ON st.ninjaId1 = s1.ninjaId
+JOIN shinobi s2 ON st.ninjaId2 = s2.ninjaId
+GROUP BY s1.ninjaName, s2.ninjaName
+HAVING COUNT(*) > 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
