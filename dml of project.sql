@@ -99,11 +99,11 @@ INSERT INTO rogueAssociation (ra_name, memberCount, leader, formationDate, activ
 ('Seven Swordsmen',7,25,'2000-01-01','Medium','Mist','Coup detat');
 
 INSERT INTO presided_by (villageName, ninjaId, leaderShipStartingDate, LeaderShipStatus) VALUES
-('Leaf', 1, '1995-01-01', 'Former'),
-('Leaf', 5, '2001-01-01', 'Former'),
-('Leaf', 3, '2006-01-01', 'Active'),
-('Sand', 16, '2004-01-01', 'Active'),
-('Rain', 21, '2006-01-01', 'Active');
+('Leaf', 1, 'Former'),
+('Leaf', 5, 'Former'),
+('Leaf', 3, 'Active'),
+('Sand', 16, 'Active'),
+('Rain', 21, 'Active');
 
 INSERT INTO created_by (NinjaID, JutsuName, creationDate) VALUES
 (5,'Rasengan','2001-01-01'),
