@@ -1,0 +1,122 @@
+import {useState} from "react"
+
+const Base_url = 'http://localhost:5000'
+
+function App()
+{
+
+    const [shinobi,setShinobi] = useState([]);
+    const [village,setVillage] = useState([]);
+    const [smth,setSmth] = useState(false);
+    const fetchShinobi = async() => {
+    const result = await fetch(`${Base_url}/shinobi`);
+        setShinobi(await result.json())
+    } 
+    const [villageInput,setVillageInput] = useState("");
+
+    const spDemo = async() => {
+        if(!villageInput){ return;}
+        const result =  await fetch(`${Base_url}/sp_shinobi/${villageInput}`);
+        const data =  await result.json(); 
+        console.log("returned data : ",data);
+        setVillage(data);
+    }
+
+    const resetShinobi = async() => {
+        setShinobi([])
+    }
+
+    return(
+        <div>
+        <h1>WAIT</h1>
+        <button onClick={fetchShinobi}>Lets see Ninjas</button>
+            {Array.isArray(shinobi) && shinobi.length > 0 && (
+                <table border = "1">
+                    <thead>
+                        <tr>
+                            <th> Ninja Name</th>
+                            <th> Village Name</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                            {shinobi.map((row,i) => (
+                                <tr key = {i}>
+                                        <td>{row.ninjaName}</td>
+                                        <td>{row.village}</td>
+                                </tr>
+                            ))}
+
+                    </tbody>
+                    
+
+                        
+                </table>
+            )
+            }
+        <button onClick = {resetShinobi}>Clear</button>
+        <input 
+        value = {villageInput} 
+        onChange = {e=>{setSmth(true); setVillageInput(e.target.value);}} 
+        placeholder = "enter village name"/>
+        <button onClick = {spDemo}>Stored_proc</button>
+                {Array.isArray(village)&& village.length > 0 && (
+                    <table border = "2">
+                        <thead>
+                            <th>
+                                Village Name
+                            </th>
+                            <th>
+                                Tailed Beast
+                            </th>
+                        </thead>
+
+                        <tbody>
+                            {village.map((row,i) => (
+                                <tr key = {i}>
+                                    <td> {row.villageName}</td>
+                                    <td> {row.tailBeast}</td>
+                                </tr>
+                            ))}
+
+                        </tbody>
+                    </table>
+                )}
+        </div>
+    );
+}
+
+
+
+
+function MyButton()
+{
+    const [count,setCount] = useState(0);
+
+    const use = {
+        name: 'Taha'
+    };
+
+
+    function handleClick()
+    {
+        setCount(count+1);
+    }
+    function reset()
+    {
+        setCount(0);
+    }
+
+    return (
+        <>
+        <h1>Hello {use.name}</h1>
+        <button onClick={handleClick}>CLICKKKKKK {count}</button>
+        <button onClick = {reset}>Reset Count</button>
+        </>
+    );
+}
+
+
+
+export default  App
