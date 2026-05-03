@@ -27,7 +27,6 @@ CREATE TABLE village(
 CREATE TABLE presided_by(
 	villageName varchar(50),
 	ninjaId int,
-	leaderShipStartingDate date,
 	LeaderShipStatus varchar(50),
 
 	PRIMARY KEY(villageName,ninjaId)
